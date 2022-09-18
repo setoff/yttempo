@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<style>
+    .linkInput {
+        margin-top: 20pt;
+        margin-bottom: 20pt;
+        
+    }
+
+    #address {
+        width: 300px;
+        margin-right: 8pt;
+    }
+
+    .buttons {
+        display: flex;
+        height: 100;
+    }
+
+    .instrumentsPanel {
+        display: flex;
+        flex-flow: column;
+        margin-top: 20pt;
+    }
+</style>
+
+<script>
+    function printURLParseError(message) {
+        console.error(message);
+    }
+
+    function parseYTLink() {
+        var input = document.getElementById("address");
+        console.log(`INPUT URL: ${input.value}`);
+        var parser = new URL(input.value);
+
+        if (parser.hostname != "www.youtube.com") {
+            printURLParseError(`Only youtube supported. But get: ${input.value}`);
+            return;
+        }
+
+        var vId = parser.searchParams.get("v");
+        if (vId != null) {
+            console.log(`Playing video: ${vId}`);
+            player.loadVideoById(vId);
+        } else {
+            printURLParseError(`Expected url contains 'v' paramater`);
+        }
+    }
+    
+</script>
+<body>
+
+<div class="linkInput">
+    <input id="address"/>
+    <button onClick="parseYTLink()" id="runThisUrl">
+        Use this link
+    </button>
+</div>
+
+<div id="player"></div>
+
+<script>
+    // bind 'return' to input
+    function bindReturnUrlInput() {
+        var input = document.getElementById("address");
+        input.addEventListener("keyup", function(event) {
+            if (event.keyCode == 13) {
+                event.preventDefault();
+                var button = document.getElementById("runThisUrl")
+                button.click();
+            }
+        })
+    } 
+    bindReturnUrlInput()
+
+    // 2. This code loads the IFrame Player API code asynchronously.
+    var tag = document.createElement('script');
+
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    var player;
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+            height: '200',
+            width: '640',
+            videoId: '6oz0ivczNSY', //metronome 100
+            playerVars: {
+            'playsinline': 1
+            },
+            events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange,
+            'onPlaybackRateChange': onPlaybackRateChange
+            }
+        });
+    }
+
+    // 4. The API will call this function when the video player is ready.
+    function onPlayerReady(event) {
+        // player.getAvailablePlaybackRates();
+    }
+
+    function onPlayerStateChange(event) {
+        console.log(`State changed: ${event.data}`)
+    }
+    function stopVideo() {
+        player.stopVideo();
+    }
+
+    function showRates() {
+        var rates = player.getAvailablePlaybackRates();
+        var output = document.getElementsByClassName("ratesOutput")[0]
+        output.innerText = `available rates: ${rates}`
+    }
+
+    function onPlaybackRateChange(event) {
+        console.log(`Rates event: ${event.data}`)
+        var output = document.getElementsByClassName("currentRate")[0]
+        output.innerText = `Current rate: ${event.data}`
+    }
+
+    function playAtSelectedRate(selector) {
+        var rate = parseFloat(selector.options[selector.selectedIndex].value)
+        player.setPlaybackRate(rate)
+    }
+
+    function originalTempoUpdated(input) {
+        var newTempo = input.value;
+        console.log(`tempo changed: ${newTempo}`);
+        var selector = document.getElementsByName("percent")[0];
+        selector.innerHTML = '';
+        
+        const rates = [50, 60, 75, 85, 90, 95, 100, 105, 110]
+        rates.forEach(item => {
+            var element = document.createElement('option');
+            var bpm = (newTempo * item)/100;
+            element.textContent = `${item}%: ${bpm} bpm`;
+            element.value = item / 100;
+            if (item == 100) {
+                element.selected = true;
+            }
+            selector.appendChild(element);
+        });
+    }
+</script>
+
+<div class="instrumentsPanel">
+    <div class="mainInstruments">
+        <input id="original_tempo" class="tempo_input" onchange="originalTempoUpdated(this)"/>
+        <label for="percent">Tempo you can play:</label>
+        <select name="percent" onchange="playAtSelectedRate(this)">
+        </select>
+    </div>
+
+    <div class="currentRate"></div>
+</div>
+</body>
+</html>
