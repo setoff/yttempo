@@ -29,16 +29,7 @@
         console.error(message);
     }
 
-    function parseYTLink() {
-        var input = document.getElementById("address");
-        console.log(`INPUT URL: ${input.value}`);
-        var parser = new URL(input.value);
-
-        if (parser.hostname != "www.youtube.com") {
-            printURLParseError(`Only youtube supported. But get: ${input.value}`);
-            return;
-        }
-
+    function parseFullLink(parser) {
         var vId = parser.searchParams.get("v");
         if (vId != null) {
             console.log(`Playing video: ${vId}`);
@@ -46,8 +37,35 @@
         } else {
             printURLParseError(`Expected url contains 'v' paramater`);
         }
+
+        return vId
     }
-    
+
+    function parseShortLink(parser) {
+        var vId = parser.pathname.substring(parser.pathname.lastIndexOf('/') + 1)
+        if (vId != null) {
+            console.log(`Playing video: ${vId}`);
+            player.loadVideoById(vId)
+        } else {
+            printURLParseError(`Expected short url path contains video id`)
+        }
+    }
+
+    function parseYTLink() {
+        var input = document.getElementById("address");
+        console.log(`INPUT URL: ${input.value}`);
+        var parser = new URL(input.value);
+
+        var hostname = parser.hostname
+
+        if (hostname == "www.youtube.com") {
+            parseFullLink(parser)
+        } else if (hostname == "youtu.be") {
+            parseShortLink(parser)
+        } else {
+            printURLParseError(`Only youtube supported. But get ${input.value}`)
+        }
+    }
 </script>
 <body>
 
